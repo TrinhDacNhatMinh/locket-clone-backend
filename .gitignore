@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment Variables & Secrets ###
+.env
+*.env
+
+# Ignore sensitive config files
+src/main/resources/application-dev.yaml
