@@ -38,3 +38,4 @@ build/
 
 # Ignore sensitive config files
 src/main/resources/application-dev.yaml
+src/main/resources/firebase-service-account.json

@@ -3,3 +3,14 @@ spring:
     name: locket-clone-backend
   profiles:
     active: dev
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+
+app:
+  firebase:
+    service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:classpath:firebase-service-account.json}
+  cloudinary:
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
+    api-key: ${CLOUDINARY_API_KEY:12345}
+    api-secret: ${CLOUDINARY_API_SECRET:abcdef}
