@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.core.AuthenticationException;
 
 import java.util.stream.Collectors;
 
@@ -31,6 +32,13 @@ public class GlobalExceptionHandler {
         log.warn("Validation error: {}", detailedMessage);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(BaseResponse.error(ErrorCode.VALIDATION_ERROR.name(), detailedMessage));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<BaseResponse<Void>> handleAuthenticationException(AuthenticationException e) {
+        log.warn("Authentication error: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(BaseResponse.error("UNAUTHORIZED", "Full authentication is required to access this resource"));
     }
 
     @ExceptionHandler(Exception.class)
