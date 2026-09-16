@@ -32,10 +32,10 @@ public class User extends BaseEntity {
     @Column(name = "phone_number", unique = true)
     private String phoneNumber;
 
-    @Column(name = "username", unique = true, nullable = false)
+    @Column(name = "username", unique = true)
     private String username;
 
-    @Column(name = "firebase_uid", unique = true, nullable = false)
+    @Column(name = "firebase_uid", unique = true)
     private String firebaseUid;
 
     @Enumerated(EnumType.STRING)
@@ -45,6 +45,9 @@ public class User extends BaseEntity {
     @Column(name = "is_profile_completed", nullable = false)
     @Builder.Default
     private boolean isProfileCompleted = false;
+
+    @Column(name = "fcm_token")
+    private String fcmToken;
 
     @Column(name = "display_name")
     private String displayName;
