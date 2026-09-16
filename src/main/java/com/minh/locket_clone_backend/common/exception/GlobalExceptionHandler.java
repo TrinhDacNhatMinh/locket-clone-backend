@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.security.core.AuthenticationException;
 
 import java.util.stream.Collectors;
@@ -34,11 +36,25 @@ public class GlobalExceptionHandler {
                 .body(BaseResponse.error(ErrorCode.VALIDATION_ERROR.name(), detailedMessage));
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<BaseResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+        log.warn("Malformed JSON request or missing body: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(BaseResponse.error(ErrorCode.VALIDATION_ERROR.name(), "Request body is missing or malformed"));
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<BaseResponse<Void>> handleAuthenticationException(AuthenticationException e) {
         log.warn("Authentication error: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(BaseResponse.error("UNAUTHORIZED", "Full authentication is required to access this resource"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<BaseResponse<Void>> handleMethodNotSupportedException(HttpRequestMethodNotSupportedException e) {
+        log.warn("Method not supported: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(BaseResponse.error("METHOD_NOT_ALLOWED", "HTTP Method not supported for this endpoint"));
     }
 
     @ExceptionHandler(Exception.class)

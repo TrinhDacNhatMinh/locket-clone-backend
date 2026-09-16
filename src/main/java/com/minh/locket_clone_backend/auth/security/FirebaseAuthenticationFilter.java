@@ -59,7 +59,11 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
                 // Get internal user ID if exists
                 User user = userRepository.findByFirebaseUid(firebaseUid).orElse(null);
-                UUID userId = user != null ? user.getId() : null;
+                if (user == null) {
+                    log.warn("User with Firebase UID {} not found in database (may be deleted)", firebaseUid);
+                    throw new BusinessException(ErrorCode.USER_NOT_FOUND, "User account not found or has been deleted");
+                }
+                UUID userId = user.getId();
 
                 CustomUserDetails userDetails = new CustomUserDetails(userId, firebaseUid);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
