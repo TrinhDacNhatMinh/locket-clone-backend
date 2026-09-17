@@ -100,6 +100,34 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
     }
 
+    @Operation(summary = "Block a user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "User blocked successfully"),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @PostMapping("/{userId}/block")
+    public ResponseEntity<Void> blockUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID userId) {
+        userService.blockUser(userDetails.userId(), userId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Operation(summary = "Unblock a user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "User unblocked successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @DeleteMapping("/{userId}/block")
+    public ResponseEntity<Void> unblockUser(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID userId) {
+        userService.unblockUser(userDetails.userId(), userId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
     @Operation(summary = "Delete current user account (soft delete)")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Account deleted successfully"),

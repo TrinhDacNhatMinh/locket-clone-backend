@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,8 +15,7 @@ import java.util.UUID;
 @Repository
 public interface FriendRequestRepository extends JpaRepository<FriendRequest, UUID> {
 
-    Optional<FriendRequest> findByRequesterIdAndAddresseeIdAndStatus(UUID requesterId, UUID addresseeId,
-            FriendRequestStatus status);
+    Optional<FriendRequest> findByRequesterIdAndAddresseeIdAndStatus(UUID requesterId, UUID addresseeId, FriendRequestStatus status);
 
     boolean existsByRequesterIdAndAddresseeIdAndStatus(UUID requesterId, UUID addresseeId, FriendRequestStatus status);
 
@@ -29,5 +27,9 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, UU
 
     @Modifying
     @Query("DELETE FROM FriendRequest fr WHERE fr.status = :status AND fr.updatedAt < :cutoff")
-    int deleteByStatusAndUpdatedAtBefore(@Param("status") FriendRequestStatus status, @Param("cutoff") Instant cutoff);
+    int deleteByStatusAndUpdatedAtBefore(@Param("status") FriendRequestStatus status, @Param("cutoff") java.time.Instant cutoff);
+
+    @Modifying
+    @Query("DELETE FROM FriendRequest fr WHERE (fr.requesterId = :userA AND fr.addresseeId = :userB) OR (fr.requesterId = :userB AND fr.addresseeId = :userA)")
+    void deleteFriendRequestsBetween(@Param("userA") UUID userA, @Param("userB") UUID userB);
 }

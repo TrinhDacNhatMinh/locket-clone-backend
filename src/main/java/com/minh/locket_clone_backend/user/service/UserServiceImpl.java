@@ -4,7 +4,9 @@ import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
 import com.minh.locket_clone_backend.user.dto.*;
+import com.minh.locket_clone_backend.user.entity.Block;
 import com.minh.locket_clone_backend.user.entity.User;
+import com.minh.locket_clone_backend.user.repository.BlockRepository;
 import com.minh.locket_clone_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final BlockRepository blockRepository;
     private final ObjectProvider<FriendService> friendServiceProvider;
 
     @Override
@@ -101,9 +104,50 @@ public class UserServiceImpl implements UserService {
     public PublicProfileResponse getPublicProfile(UUID currentUserId, UUID targetUserId) {
         User targetUser = getUserById(targetUserId);
 
-        // TODO: Integrate with Block module here
+        if (blockRepository.existsByBlockerIdAndBlockedId(targetUserId, currentUserId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
 
         return PublicProfileResponse.from(targetUser);
+    }
+
+    @Override
+    @Transactional
+    public void blockUser(UUID blockerId, UUID blockedId) {
+        if (blockerId.equals(blockedId)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR);
+        }
+
+        getUserById(blockedId); // Verify blocked user exists
+
+        if (!blockRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId)) {
+            blockRepository.save(Block.builder()
+                    .blockerId(blockerId)
+                    .blockedId(blockedId)
+                    .build());
+
+            // Auto-remove friendship if exists, and delete any pending requests
+            friendServiceProvider.getObject().removeFriendshipIfExists(blockerId, blockedId);
+            friendServiceProvider.getObject().deleteFriendRequestsBetween(blockerId, blockedId);
+            log.info("User {} blocked user {}", blockerId, blockedId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void unblockUser(UUID blockerId, UUID blockedId) {
+        int deletedCount = blockRepository.deleteByBlockerIdAndBlockedId(blockerId, blockedId);
+        if (deletedCount > 0) {
+            log.info("User {} unblocked user {}", blockerId, blockedId);
+        } else {
+            log.debug("User {} attempted to unblock user {} but no block existed", blockerId, blockedId);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBlocked(UUID currentUserId, UUID targetUserId) {
+        return blockRepository.existsBidirectional(currentUserId, targetUserId);
     }
 
     @Override
@@ -127,6 +171,9 @@ public class UserServiceImpl implements UserService {
 
         // Hard-delete all Friend relationships and FriendRequests involving this user
         friendServiceProvider.getObject().deleteAllInvolvingUser(userId);
+
+        // Hard-delete all blocks involving this user
+        blockRepository.deleteAllByUserId(userId);
 
         log.info("Account soft-deleted for user {}", userId);
     }

@@ -45,7 +45,9 @@ public class FriendServiceImpl implements FriendService {
         // Validate user exists by fetching profile
         userServiceProvider.getObject().getProfile(addresseeId);
 
-        // TODO: Check isBlocked() here
+        if (userServiceProvider.getObject().isBlocked(requesterId, addresseeId)) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND);
+        }
 
         if (isFriend(requesterId, addresseeId)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Already friends");
@@ -158,6 +160,12 @@ public class FriendServiceImpl implements FriendService {
         UUID a = userAId.compareTo(userBId) < 0 ? userAId : userBId;
         UUID b = userAId.compareTo(userBId) < 0 ? userBId : userAId;
         friendRepository.deleteByUserAIdAndUserBId(a, b);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFriendRequestsBetween(UUID userAId, UUID userBId) {
+        friendRequestRepository.deleteFriendRequestsBetween(userAId, userBId);
     }
 
     @Override
