@@ -14,7 +14,8 @@ public enum ErrorCode {
     USERNAME_ALREADY_TAKEN(HttpStatus.CONFLICT, "Username is already taken"),
     EMAIL_ALREADY_IN_USE(HttpStatus.CONFLICT, "Email is already in use"),
     NOT_FRIENDS(HttpStatus.BAD_REQUEST, "Users are not friends"),
-    FRIEND_REQUEST_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "Friend request already exists"),
+    FRIEND_REQUEST_ALREADY_EXISTS(HttpStatus.CONFLICT, "Friend request already exists"),
+    RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Please wait 7 days before sending another request"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation error"),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");

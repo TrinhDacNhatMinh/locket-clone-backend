@@ -2,11 +2,13 @@ package com.minh.locket_clone_backend.user.service;
 
 import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
+import com.minh.locket_clone_backend.friend.service.FriendService;
 import com.minh.locket_clone_backend.user.dto.*;
 import com.minh.locket_clone_backend.user.entity.User;
 import com.minh.locket_clone_backend.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,8 +19,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-
     private final UserRepository userRepository;
+    private final ObjectProvider<FriendService> friendServiceProvider;
 
     @Override
     @Transactional(readOnly = true)
@@ -120,15 +122,11 @@ public class UserServiceImpl implements UserService {
         user.setFcmToken(null);
         userRepository.save(user);
 
-        // Step 3: Cascade soft-delete owned photos
-        // TODO(Sprint 4): uncomment once Photo entity exists
+        // Cascade soft-delete owned photos
+        // TODO: uncomment once Photo entity exists
 
-        // Step 4: Hard-delete all Friend relationships involving this user
-        // TODO(Sprint 3): implement FriendRepository.deleteAllInvolvingUser(userId)
-
-        // Step 5: Hard-delete all FriendRequest involving this user, both directions
-        // (requester -> this user, and this user -> addressee)
-        // TODO(Sprint 3): implement FriendRequestRepository.deleteAllInvolvingUser(userId)
+        // Hard-delete all Friend relationships and FriendRequests involving this user
+        friendServiceProvider.getObject().deleteAllInvolvingUser(userId);
 
         log.info("Account soft-deleted for user {}", userId);
     }
