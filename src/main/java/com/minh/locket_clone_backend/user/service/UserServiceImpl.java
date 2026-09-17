@@ -15,7 +15,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -148,6 +153,21 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public boolean isBlocked(UUID currentUserId, UUID targetUserId) {
         return blockRepository.existsBidirectional(currentUserId, targetUserId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PublicProfileResponse> searchUsers(UUID currentUserId, String query, int limit, int page) {
+        if (query == null || query.trim().isEmpty()) {
+            return List.of();
+        }
+
+        Pageable pageable = PageRequest.of(page, limit);
+        List<User> users = userRepository.searchUsers(query.trim(), currentUserId, pageable);
+
+        return users.stream()
+                .map(PublicProfileResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Override

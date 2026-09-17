@@ -2,6 +2,7 @@ package com.minh.locket_clone_backend.user.service;
 
 import com.minh.locket_clone_backend.user.dto.*;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface UserService {
@@ -20,6 +21,8 @@ public interface UserService {
     void unblockUser(UUID blockerId, UUID blockedId);
 
     boolean isBlocked(UUID currentUserId, UUID targetUserId);
+
+    List<PublicProfileResponse> searchUsers(UUID currentUserId, String query, int limit, int page);
 
     void deleteAccount(UUID userId);
 }

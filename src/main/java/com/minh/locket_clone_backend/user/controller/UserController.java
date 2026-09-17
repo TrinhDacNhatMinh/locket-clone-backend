@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -137,5 +138,19 @@ public class UserController {
     public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal CustomUserDetails userDetails) {
         userService.deleteAccount(userDetails.userId());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+    @Operation(summary = "Search users by username")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/search")
+    public ResponseEntity<BaseResponse<List<PublicProfileResponse>>> searchUsers(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam("q") String query,
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            @RequestParam(value = "page", defaultValue = "0") int page) {
+        List<PublicProfileResponse> response = userService.searchUsers(userDetails.userId(), query, limit, page);
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
     }
 }
