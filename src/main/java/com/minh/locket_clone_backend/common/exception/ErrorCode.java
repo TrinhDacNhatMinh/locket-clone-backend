@@ -18,6 +18,13 @@ public enum ErrorCode {
     RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Please wait 7 days before sending another request"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation error"),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format. Only jpg, jpeg, png, webp are allowed"),
+    FILE_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "File size exceeds the 20MB limit"),
+    AUDIENCE_USER_NOT_FRIEND(HttpStatus.BAD_REQUEST, "One or more users in the audience are not your friends"),
+    PHOTO_ACCESS_DENIED(HttpStatus.FORBIDDEN, "You do not have permission to access this photo"),
+    PHOTO_NOT_OWNER(HttpStatus.FORBIDDEN, "You are not the owner of this photo"),
+    PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "Photo not found"),
+    STORAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to upload file to storage provider"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
     private final HttpStatus status;
