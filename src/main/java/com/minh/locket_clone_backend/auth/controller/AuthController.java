@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,7 +46,7 @@ public class AuthController {
         FirebaseToken token = verifyToken(request.firebaseIdToken());
         validateProvider(token, "phone");
         AuthResponse response = userSyncService.syncUser(token, AuthProvider.PHONE);
-        return ResponseEntity.ok(BaseResponse.success(response));
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
     }
 
     @Operation(summary = "Login with Firebase Google Auth")
@@ -59,7 +60,7 @@ public class AuthController {
         FirebaseToken token = verifyToken(request.firebaseIdToken());
         validateProvider(token, "google.com");
         AuthResponse response = userSyncService.syncUser(token, AuthProvider.GOOGLE);
-        return ResponseEntity.ok(BaseResponse.success(response));
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
     }
 
     @Operation(summary = "Logout")
@@ -68,7 +69,7 @@ public class AuthController {
     })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     private FirebaseToken verifyToken(String idToken) {
