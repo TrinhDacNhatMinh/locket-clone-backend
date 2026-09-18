@@ -23,4 +23,7 @@ public interface FriendRepository extends JpaRepository<Friend, UUID> {
     @Modifying
     @Query("DELETE FROM Friend f WHERE f.userAId = :userId OR f.userBId = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT CASE WHEN f.userAId = :userId THEN f.userBId ELSE f.userAId END FROM Friend f WHERE f.userAId = :userId OR f.userBId = :userId")
+    List<UUID> findFriendIdsByUserId(@Param("userId") UUID userId);
 }

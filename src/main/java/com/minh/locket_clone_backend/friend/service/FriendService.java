@@ -18,6 +18,8 @@ public interface FriendService {
 
     List<PublicProfileResponse> getFriendList(UUID userId);
 
+    List<UUID> getFriendIds(UUID userId);
+
     void removeFriend(UUID userId, UUID friendUserId);
 
     boolean isFriend(UUID userAId, UUID userBId);

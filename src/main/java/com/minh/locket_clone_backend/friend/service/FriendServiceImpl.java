@@ -137,6 +137,12 @@ public class FriendServiceImpl implements FriendService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<UUID> getFriendIds(UUID userId) {
+        return friendRepository.findFriendIdsByUserId(userId);
+    }
+
+    @Override
     @Transactional
     public void removeFriend(UUID userId, UUID friendUserId) {
         if (!isFriend(userId, friendUserId)) {
