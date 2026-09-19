@@ -45,4 +45,19 @@ public class PhotoController {
         PhotoResponse response = photoService.createPhoto(userDetails.userId(), image, caption, audienceType, audienceUserIds, metadataJson);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @Operation(summary = "Delete a photo", description = "Soft deletes a photo. Only the owner can delete their photo.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Photo deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Not the owner of the photo"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @DeleteMapping("/{photoId}")
+    public ResponseEntity<Void> deletePhoto(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID photoId
+    ) {
+        photoService.deletePhoto(userDetails.userId(), photoId);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 }

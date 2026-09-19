@@ -11,4 +11,5 @@ public interface PhotoService {
 
     PhotoResponse createPhoto(UUID ownerId, MultipartFile image, String caption, AudienceType audienceType, List<UUID> audienceUserIds, String metadataJson);
 
+    void deletePhoto(UUID requesterId, UUID photoId);
 }

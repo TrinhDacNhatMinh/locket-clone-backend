@@ -84,6 +84,17 @@ public class PhotoServiceImpl implements PhotoService {
         return PhotoResponse.from(savedPhoto);
     }
 
+    @Override
+    @Transactional
+    public void deletePhoto(UUID requesterId, UUID photoId) {
+        Photo photo = photoRepository.findByIdAndOwnerId(photoId, requesterId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PHOTO_NOT_OWNER));
+
+        // Softly delete
+        photo.setDeletedAt(java.time.Instant.now());
+        photoRepository.save(photo);
+    }
+
     private Map<String, Object> parseAndValidateMetadata(String metadataJson) {
         if (metadataJson == null || metadataJson.trim().isEmpty()) {
             return null;
