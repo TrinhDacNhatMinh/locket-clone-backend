@@ -13,10 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +28,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Validated
 @Tag(name = "User Profile", description = "Endpoints for managing user profiles")
 public class UserController {
 
@@ -139,6 +143,7 @@ public class UserController {
         userService.deleteAccount(userDetails.userId());
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
     @Operation(summary = "Search users by username")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
@@ -148,8 +153,8 @@ public class UserController {
     public ResponseEntity<BaseResponse<List<PublicProfileResponse>>> searchUsers(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam("q") String query,
-            @RequestParam(value = "limit", defaultValue = "20") int limit,
-            @RequestParam(value = "page", defaultValue = "0") int page) {
+            @RequestParam(value = "limit", defaultValue = "20") @Min(1) @Max(50) int limit,
+            @RequestParam(value = "page", defaultValue = "0") @Min(0) int page) {
         List<PublicProfileResponse> response = userService.searchUsers(userDetails.userId(), query, limit, page);
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
     }
