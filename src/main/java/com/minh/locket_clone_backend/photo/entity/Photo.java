@@ -12,7 +12,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Entity
-@Table(name = "photos")
+@Table(name = "photos", indexes = {
+        @Index(name = "idx_photo_feed", columnList = "owner_id, created_at DESC, id DESC")
+})
 @Getter
 @Setter
 @Builder

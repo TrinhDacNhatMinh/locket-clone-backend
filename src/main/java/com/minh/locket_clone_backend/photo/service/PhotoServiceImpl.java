@@ -13,12 +13,17 @@ import com.minh.locket_clone_backend.photo.entity.Photo;
 import com.minh.locket_clone_backend.photo.entity.PhotoAudience;
 import com.minh.locket_clone_backend.photo.repository.PhotoAudienceRepository;
 import com.minh.locket_clone_backend.photo.repository.PhotoRepository;
+import com.minh.locket_clone_backend.common.dto.CursorPagedResponse;
+import com.minh.locket_clone_backend.common.utils.CursorPaginationHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -93,6 +98,48 @@ public class PhotoServiceImpl implements PhotoService {
         // Softly delete
         photo.setDeletedAt(java.time.Instant.now());
         photoRepository.save(photo);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Photo> getFeedPhotos(List<UUID> friendIds, UUID viewerId, Instant cursorCreatedAt, UUID cursorId, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        if (cursorCreatedAt == null) {
+            return photoRepository.findFeedPhotosFirstPage(friendIds, viewerId, pageable);
+        }
+        return photoRepository.findFeedPhotosNextPage(friendIds, viewerId, cursorCreatedAt, cursorId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Photo> getFriendPhotos(UUID friendId, UUID viewerId, Instant cursorCreatedAt, UUID cursorId, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        if (cursorCreatedAt == null) {
+            return photoRepository.findFriendPhotosFirstPage(friendId, viewerId, pageable);
+        }
+        return photoRepository.findFriendPhotosNextPage(friendId, viewerId, cursorCreatedAt, cursorId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CursorPagedResponse<PhotoResponse> getMyPhotos(UUID ownerId, String cursor, int limit) {
+        Pageable pageable = PageRequest.of(0, limit + 1);
+        List<Photo> photos;
+
+        if (cursor == null || cursor.trim().isEmpty()) {
+            photos = photoRepository.findMyPhotosFirstPage(ownerId, pageable);
+        } else {
+            CursorPaginationHelper.Cursor decodedCursor = CursorPaginationHelper.decodeCursor(cursor);
+            photos = photoRepository.findMyPhotosNextPage(ownerId, decodedCursor.createdAt(), decodedCursor.id(), pageable);
+        }
+
+        return CursorPaginationHelper.buildPagedResponse(
+                photos,
+                limit,
+                PhotoResponse::from,
+                Photo::getCreatedAt,
+                Photo::getId
+        );
     }
 
     private Map<String, Object> parseAndValidateMetadata(String metadataJson) {
