@@ -3,6 +3,7 @@ package com.minh.locket_clone_backend.user.service;
 import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
+import com.minh.locket_clone_backend.photo.service.PhotoService;
 import com.minh.locket_clone_backend.user.dto.*;
 import com.minh.locket_clone_backend.user.entity.Block;
 import com.minh.locket_clone_backend.user.entity.User;
@@ -29,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BlockRepository blockRepository;
     private final ObjectProvider<FriendService> friendServiceProvider;
+    private final PhotoService photoService;
 
     @Override
     @Transactional(readOnly = true)
@@ -170,6 +172,15 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Completes a 5-step cascade delete process when a user deletes their account:
+     * 1. Soft-deletes User record
+     * 2. Clears unique constraints (email, username, phone) to free them up
+     * 3. Soft-deletes all owned Photos (A-8)
+     * 4. Hard-deletes all Friend relationships and FriendRequests
+     * 5. Hard-deletes all Blocks involving this user
+     * Note: Messages and notifications are intentionally kept untouched.
+     */
     @Override
     @Transactional
     public void deleteAccount(UUID userId) {
@@ -187,7 +198,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         // Cascade soft-delete owned photos
-        // TODO: uncomment once Photo entity exists
+        photoService.softDeleteAllOwnedBy(userId);
 
         // Hard-delete all Friend relationships and FriendRequests involving this user
         friendServiceProvider.getObject().deleteAllInvolvingUser(userId);

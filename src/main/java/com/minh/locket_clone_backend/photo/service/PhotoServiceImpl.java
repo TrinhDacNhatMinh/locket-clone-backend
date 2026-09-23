@@ -158,4 +158,11 @@ public class PhotoServiceImpl implements PhotoService {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Invalid JSON format for metadata");
         }
     }
+
+    @Override
+    @Transactional
+    public void softDeleteAllOwnedBy(UUID ownerId) {
+        photoRepository.softDeleteAllByOwnerId(ownerId);
+        log.info("Soft-deleted all photos owned by user {}", ownerId);
+    }
 }

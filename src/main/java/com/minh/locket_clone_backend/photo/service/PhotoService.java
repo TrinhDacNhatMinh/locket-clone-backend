@@ -23,4 +23,6 @@ public interface PhotoService {
     List<Photo> getFeedPhotos(List<UUID> friendIds, UUID viewerId, Instant cursorCreatedAt, UUID cursorId, int limit);
 
     List<Photo> getFriendPhotos(UUID friendId, UUID viewerId, Instant cursorCreatedAt, UUID cursorId, int limit);
+
+    void softDeleteAllOwnedBy(UUID ownerId);
 }
