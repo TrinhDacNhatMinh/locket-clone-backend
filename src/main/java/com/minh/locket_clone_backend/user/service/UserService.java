@@ -3,6 +3,7 @@ package com.minh.locket_clone_backend.user.service;
 import com.minh.locket_clone_backend.user.dto.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserService {
@@ -25,4 +26,8 @@ public interface UserService {
     List<PublicProfileResponse> searchUsers(UUID currentUserId, String query, int limit, int page);
 
     void deleteAccount(UUID userId);
+
+    Optional<UUID> findUserIdByFirebaseUid(String firebaseUid);
+
+    SyncUserResponse syncWithFirebase(SyncUserRequest request);
 }

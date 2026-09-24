@@ -5,6 +5,7 @@ import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
 import com.minh.locket_clone_backend.photo.service.PhotoService;
 import com.minh.locket_clone_backend.user.dto.*;
+import com.minh.locket_clone_backend.user.entity.AuthProvider;
 import com.minh.locket_clone_backend.user.entity.Block;
 import com.minh.locket_clone_backend.user.entity.User;
 import com.minh.locket_clone_backend.user.repository.BlockRepository;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -212,5 +214,53 @@ public class UserServiceImpl implements UserService {
     private User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> findUserIdByFirebaseUid(String firebaseUid) {
+        return userRepository.findByFirebaseUid(firebaseUid).map(User::getId);
+    }
+
+    @Override
+    @Transactional
+    public SyncUserResponse syncWithFirebase(SyncUserRequest request) {
+        Optional<User> userOptional = userRepository.findByFirebaseUid(request.firebaseUid());
+
+        if (userOptional.isPresent()) {
+            User existingUser = userOptional.get();
+            boolean isProfileIncomplete = !existingUser.isProfileCompleted();
+            return new SyncUserResponse(UserResponse.from(existingUser), false, isProfileIncomplete);
+        }
+
+        // Create new user
+        User newUser = new User();
+        newUser.setFirebaseUid(request.firebaseUid());
+        newUser.setAuthProvider(request.expectedProvider());
+        newUser.setUsername(generateTempUsername());
+
+        if (request.expectedProvider() == AuthProvider.GOOGLE) {
+            newUser.setEmail(request.email());
+            newUser.setDisplayName(request.displayName());
+            newUser.setAvatarUrl(request.avatarUrl());
+        } else if (request.expectedProvider() == AuthProvider.PHONE) {
+            newUser.setPhoneNumber(request.phoneNumber());
+        }
+
+        newUser.setProfileCompleted(false);
+
+        User savedUser = userRepository.save(newUser);
+        return new SyncUserResponse(UserResponse.from(savedUser), true, true);
+    }
+
+    private String generateTempUsername() {
+        int maxRetries = 5;
+        for (int i = 0; i < maxRetries; i++) {
+            String tempUsername = "user_" + UUID.randomUUID().toString().substring(0, 8);
+            if (!userRepository.existsByUsername(tempUsername)) {
+                return tempUsername;
+            }
+        }
+        throw new BusinessException(ErrorCode.INTERNAL_ERROR, "Could not generate a unique temporary username after " + maxRetries + " attempts");
     }
 }
