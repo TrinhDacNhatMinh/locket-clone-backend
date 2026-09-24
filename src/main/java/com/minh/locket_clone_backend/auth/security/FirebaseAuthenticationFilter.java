@@ -1,13 +1,10 @@
 package com.minh.locket_clone_backend.auth.security;
 
 import com.google.firebase.auth.AuthErrorCode;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
-import com.google.firebase.auth.FirebaseToken;
 import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
-import com.minh.locket_clone_backend.user.entity.User;
-import com.minh.locket_clone_backend.user.repository.UserRepository;
+import com.minh.locket_clone_backend.auth.service.AuthenticationResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,15 +22,13 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.UUID;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
-    private final FirebaseAuth firebaseAuth;
-    private final UserRepository userRepository;
+    private final AuthenticationResolver authenticationResolver;
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Override
@@ -44,9 +39,9 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt)) {
-                FirebaseToken decodedToken;
+                CustomUserDetails userDetails;
                 try {
-                    decodedToken = firebaseAuth.verifyIdToken(jwt);
+                    userDetails = authenticationResolver.resolveUser(jwt);
                 } catch (FirebaseAuthException e) {
                     log.warn("Firebase Auth Exception: {}", e.getMessage());
                     if (AuthErrorCode.EXPIRED_ID_TOKEN.equals(e.getAuthErrorCode())) {
@@ -55,17 +50,6 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
                     throw new BusinessException(ErrorCode.FIREBASE_TOKEN_INVALID);
                 }
 
-                String firebaseUid = decodedToken.getUid();
-
-                // Get internal user ID if exists
-                User user = userRepository.findByFirebaseUid(firebaseUid).orElse(null);
-                if (user == null) {
-                    log.warn("User with Firebase UID {} not found in database (may be deleted)", firebaseUid);
-                    throw new BusinessException(ErrorCode.USER_NOT_FOUND, "User account not found or has been deleted");
-                }
-                UUID userId = user.getId();
-
-                CustomUserDetails userDetails = new CustomUserDetails(userId, firebaseUid);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, Collections.emptyList()
                 );
