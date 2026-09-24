@@ -6,7 +6,7 @@ import tools.jackson.databind.json.JsonMapper;
 import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
-import com.minh.locket_clone_backend.notification.service.NotificationService;
+import com.minh.locket_clone_backend.notification.service.InAppNotificationService;
 import com.minh.locket_clone_backend.photo.dto.PhotoResponse;
 import com.minh.locket_clone_backend.photo.entity.AudienceType;
 import com.minh.locket_clone_backend.photo.entity.Photo;
@@ -38,7 +38,7 @@ public class PhotoServiceImpl implements PhotoService {
     private final PhotoAudienceRepository photoAudienceRepository;
     private final StorageService storageService;
     private final FriendService friendService;
-    private final NotificationService notificationService;
+    private final InAppNotificationService inAppNotificationService;
     private final JsonMapper jsonMapper;
 
     @Override
@@ -84,7 +84,7 @@ public class PhotoServiceImpl implements PhotoService {
             eligibleViewerIds = friendService.getFriendIds(ownerId);
         }
 
-        notificationService.notifyNewPhoto(ownerId, eligibleViewerIds);
+        inAppNotificationService.notifyNewPhoto(ownerId, eligibleViewerIds);
 
         return PhotoResponse.from(savedPhoto);
     }
