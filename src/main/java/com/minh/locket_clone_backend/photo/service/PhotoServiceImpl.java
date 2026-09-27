@@ -160,6 +160,30 @@ public class PhotoServiceImpl implements PhotoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Photo getPhotoIfAllowed(UUID viewerId, UUID photoId) {
+        Photo photo = photoRepository.findById(photoId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PHOTO_NOT_FOUND));
+
+        if (photo.getOwnerId().equals(viewerId)) {
+            return photo;
+        }
+
+        if (photo.getAudienceType() == AudienceType.ALL_FRIENDS) {
+            if (!friendService.isFriend(photo.getOwnerId(), viewerId)) {
+                throw new BusinessException(ErrorCode.PHOTO_ACCESS_DENIED);
+            }
+        } else if (photo.getAudienceType() == AudienceType.CUSTOM) {
+            boolean isAllowed = photoAudienceRepository.existsByPhotoIdAndUserId(photoId, viewerId);
+            if (!isAllowed) {
+                throw new BusinessException(ErrorCode.PHOTO_ACCESS_DENIED);
+            }
+        }
+
+        return photo;
+    }
+
+    @Override
     @Transactional
     public void softDeleteAllOwnedBy(UUID ownerId) {
         photoRepository.softDeleteAllByOwnerId(ownerId);

@@ -24,5 +24,7 @@ public interface PhotoService {
 
     List<Photo> getFriendPhotos(UUID friendId, UUID viewerId, Instant cursorCreatedAt, UUID cursorId, int limit);
 
+    Photo getPhotoIfAllowed(UUID viewerId, UUID photoId);
+
     void softDeleteAllOwnedBy(UUID ownerId);
 }
