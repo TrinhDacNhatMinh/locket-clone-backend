@@ -24,9 +24,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query(value = "SELECT * FROM users WHERE id = :id", nativeQuery = true)
     Optional<User> findByIdIncludingDeleted(@Param("id") UUID id);
 
-    @Query("SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) " +
-            "AND u.id != :currentUserId " +
-            "AND NOT EXISTS (SELECT 1 FROM Block b WHERE (b.blockerId = :currentUserId AND b.blockedId = u.id) " +
-            "OR (b.blockerId = u.id AND b.blockedId = :currentUserId))")
+    @Query("""
+            SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
+            AND u.id != :currentUserId
+            AND NOT EXISTS (SELECT 1 FROM Block b WHERE (b.blockerId = :currentUserId AND b.blockedId = u.id)
+            OR (b.blockerId = u.id AND b.blockedId = :currentUserId))
+            """)
     List<User> searchUsers(@Param("query") String query, @Param("currentUserId") UUID currentUserId, Pageable pageable);
 }
