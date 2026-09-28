@@ -49,6 +49,10 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public MessageResponse sendMessage(UUID senderId, UUID recipientId, String content) {
+        if (senderId.equals(recipientId)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Cannot send message to yourself");
+        }
+
         // 1. Check recipient exists (including deleted accounts)
         User recipient = userService.getUserByIdIncludingDeleted(recipientId);
 
@@ -86,6 +90,10 @@ public class ChatServiceImpl implements ChatService {
     @Override
     @Transactional
     public UUID getOrCreateConversation(UUID userA, UUID userB) {
+        if (userA.equals(userB)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Cannot create conversation with yourself");
+        }
+
         return conversationRepository.findByParticipants(userA, userB)
                 .map(Conversation::getId)
                 .orElseGet(() -> {
@@ -206,6 +214,10 @@ public class ChatServiceImpl implements ChatService {
         // 1. Check commenter can view the photo (access control)
         Photo photo = photoService.getPhotoIfAllowed(commenterId, photoId);
         UUID photoOwnerId = photo.getOwnerId();
+
+        if (commenterId.equals(photoOwnerId)) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Cannot comment on your own photo");
+        }
 
         // 2. Reuse sendMessage logic (block check, get-or-create, FCM/WebSocket),
         //    But we need to save with type=PHOTO_COMMENT and referencePhotoId set.

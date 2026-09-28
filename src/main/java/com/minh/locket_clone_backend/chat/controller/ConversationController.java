@@ -1,6 +1,7 @@
 package com.minh.locket_clone_backend.chat.controller;
 
 import com.minh.locket_clone_backend.auth.security.CustomUserDetails;
+import com.minh.locket_clone_backend.chat.dto.ConversationIdResponse;
 import com.minh.locket_clone_backend.chat.dto.ConversationSummaryResponse;
 import com.minh.locket_clone_backend.chat.dto.MessageResponse;
 import com.minh.locket_clone_backend.chat.dto.SendMessageRequest;
@@ -49,12 +50,12 @@ public class ConversationController {
             @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping("/{userId}")
-    public ResponseEntity<BaseResponse<UUID>> getOrCreateConversation(
+    public ResponseEntity<BaseResponse<ConversationIdResponse>> getOrCreateConversation(
             @PathVariable UUID userId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         UUID conversationId = chatService.getOrCreateConversation(userDetails.userId(), userId);
-        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(conversationId));
+        return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(new ConversationIdResponse(conversationId)));
     }
 
     @Operation(summary = "Send a message", description = "Sends a text message to another user. Returns 403 if blocked or if the recipient account was deleted.")
