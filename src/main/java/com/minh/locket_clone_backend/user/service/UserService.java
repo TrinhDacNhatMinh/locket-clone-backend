@@ -1,6 +1,7 @@
 package com.minh.locket_clone_backend.user.service;
 
 import com.minh.locket_clone_backend.user.dto.*;
+import com.minh.locket_clone_backend.user.entity.User;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,4 +31,8 @@ public interface UserService {
     Optional<UUID> findUserIdByFirebaseUid(String firebaseUid);
 
     SyncUserResponse syncWithFirebase(SyncUserRequest request);
+
+    User getUserById(UUID userId);
+
+    User getUserByIdIncludingDeleted(UUID userId);
 }

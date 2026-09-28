@@ -211,7 +211,8 @@ public class UserServiceImpl implements UserService {
         log.info("Account soft-deleted for user {}", userId);
     }
 
-    private User getUserById(UUID userId) {
+    @Override
+    public User getUserById(UUID userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
@@ -262,5 +263,12 @@ public class UserServiceImpl implements UserService {
             }
         }
         throw new BusinessException(ErrorCode.INTERNAL_ERROR, "Could not generate a unique temporary username after " + maxRetries + " attempts");
+    }
+    
+
+    @Override
+    public User getUserByIdIncludingDeleted(UUID userId) {
+        return userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 }
