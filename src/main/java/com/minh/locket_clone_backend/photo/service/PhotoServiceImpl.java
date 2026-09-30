@@ -1,18 +1,23 @@
 package com.minh.locket_clone_backend.photo.service;
 
+import com.minh.locket_clone_backend.infrastructure.storage.service.StorageService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
-import com.minh.locket_clone_backend.notification.service.InAppNotificationService;
+import com.minh.locket_clone_backend.notification.entity.NotificationType;
+import com.minh.locket_clone_backend.notification.service.NotificationService;
+import com.minh.locket_clone_backend.user.entity.User;
+import com.minh.locket_clone_backend.user.service.UserService;
 import com.minh.locket_clone_backend.photo.dto.PhotoResponse;
 import com.minh.locket_clone_backend.photo.entity.AudienceType;
 import com.minh.locket_clone_backend.photo.entity.Photo;
 import com.minh.locket_clone_backend.photo.entity.PhotoAudience;
 import com.minh.locket_clone_backend.photo.repository.PhotoAudienceRepository;
 import com.minh.locket_clone_backend.photo.repository.PhotoRepository;
+import com.minh.locket_clone_backend.websocket.dto.RealtimeEventType;
 import com.minh.locket_clone_backend.common.dto.CursorPagedResponse;
 import com.minh.locket_clone_backend.common.utils.CursorPaginationHelper;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +43,8 @@ public class PhotoServiceImpl implements PhotoService {
     private final PhotoAudienceRepository photoAudienceRepository;
     private final StorageService storageService;
     private final FriendService friendService;
-    private final InAppNotificationService inAppNotificationService;
+    private final NotificationService notificationService;
+    private final UserService userService;
     private final JsonMapper jsonMapper;
 
     @Override
@@ -84,7 +90,22 @@ public class PhotoServiceImpl implements PhotoService {
             eligibleViewerIds = friendService.getFriendIds(ownerId);
         }
 
-        inAppNotificationService.notifyNewPhoto(ownerId, eligibleViewerIds);
+        User owner = userService.getUserById(ownerId);
+        PhotoResponse payload = PhotoResponse.from(savedPhoto);
+
+        for (UUID viewerId : eligibleViewerIds) {
+            notificationService.notify(
+                    viewerId,
+                    NotificationType.NEW_PHOTO,
+                    RealtimeEventType.WIDGET_UPDATE,
+                    Map.of(
+                            "actorDisplayName", owner.getDisplayName(),
+                            "photoId", savedPhoto.getId().toString(),
+                            "imageUrl", savedPhoto.getImageUrl()
+                    ),
+                    payload
+            );
+        }
 
         return PhotoResponse.from(savedPhoto);
     }
@@ -142,23 +163,6 @@ public class PhotoServiceImpl implements PhotoService {
         );
     }
 
-    private Map<String, Object> parseAndValidateMetadata(String metadataJson) {
-        if (metadataJson == null || metadataJson.trim().isEmpty()) {
-            return null;
-        }
-
-        if (metadataJson.length() > 5120) {
-            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Metadata size must not exceed 5KB");
-        }
-
-        try {
-            return jsonMapper.readValue(metadataJson, new TypeReference<>() {
-            });
-        } catch (JacksonException e) {
-            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Invalid JSON format for metadata");
-        }
-    }
-
     @Override
     @Transactional(readOnly = true)
     public Photo getPhotoIfAllowed(UUID viewerId, UUID photoId) {
@@ -188,5 +192,22 @@ public class PhotoServiceImpl implements PhotoService {
     public void softDeleteAllOwnedBy(UUID ownerId) {
         photoRepository.softDeleteAllByOwnerId(ownerId);
         log.info("Soft-deleted all photos owned by user {}", ownerId);
+    }
+
+    private Map<String, Object> parseAndValidateMetadata(String metadataJson) {
+        if (metadataJson == null || metadataJson.trim().isEmpty()) {
+            return null;
+        }
+
+        if (metadataJson.length() > 5120) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Metadata size must not exceed 5KB");
+        }
+
+        try {
+            return jsonMapper.readValue(metadataJson, new TypeReference<>() {
+            });
+        } catch (JacksonException e) {
+            throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Invalid JSON format for metadata");
+        }
     }
 }

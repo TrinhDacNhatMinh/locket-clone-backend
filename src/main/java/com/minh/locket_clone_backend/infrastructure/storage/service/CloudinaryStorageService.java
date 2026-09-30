@@ -1,4 +1,4 @@
-package com.minh.locket_clone_backend.photo.service;
+package com.minh.locket_clone_backend.infrastructure.storage.service;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;

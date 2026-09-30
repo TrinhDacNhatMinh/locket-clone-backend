@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BlockRepository blockRepository;
     private final ObjectProvider<FriendService> friendServiceProvider;
-    private final PhotoService photoService;
+    private final ObjectProvider<PhotoService> photoServiceProvider;
 
     @Override
     @Transactional(readOnly = true)
@@ -200,7 +200,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         // Cascade soft-delete owned photos
-        photoService.softDeleteAllOwnedBy(userId);
+        photoServiceProvider.getObject().softDeleteAllOwnedBy(userId);
 
         // Hard-delete all Friend relationships and FriendRequests involving this user
         friendServiceProvider.getObject().deleteAllInvolvingUser(userId);

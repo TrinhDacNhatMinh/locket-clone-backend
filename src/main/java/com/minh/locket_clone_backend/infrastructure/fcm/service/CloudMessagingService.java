@@ -1,4 +1,4 @@
-package com.minh.locket_clone_backend.notification.service;
+package com.minh.locket_clone_backend.infrastructure.fcm.service;
 
 import java.util.Map;
 

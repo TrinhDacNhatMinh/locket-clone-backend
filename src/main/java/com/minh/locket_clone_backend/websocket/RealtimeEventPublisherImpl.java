@@ -1,5 +1,6 @@
 package com.minh.locket_clone_backend.websocket;
 
+import com.minh.locket_clone_backend.websocket.dto.RealtimeEventType;
 import com.minh.locket_clone_backend.websocket.dto.RealtimeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,17 +18,16 @@ public class RealtimeEventPublisherImpl implements RealtimeEventPublisher {
     private final SessionRegistry sessionRegistry;
 
     @Override
-    public void publish(UUID userId, String eventType, Object payload) {
-        if (!sessionRegistry.isOnline(userId)) {
-            log.debug("User {} is offline. Realtime event {} will not be sent via WebSocket.", userId, eventType);
+    public void publish(UUID recipientId, RealtimeEventType eventType, Object payload) {
+        if (!sessionRegistry.isOnline(recipientId)) {
+            log.debug("User {} is offline. Realtime event {} will not be sent via WebSocket.", recipientId, eventType);
             return;
         }
 
         RealtimeEvent event = new RealtimeEvent(eventType, payload);
-        // We use convertAndSendToUser. Since we set the Principal name to userId.toString(), 
-        // Spring will route this to /user/{userId}/queue/events
-        messagingTemplate.convertAndSendToUser(userId.toString(), "/queue/events", event);
+        // Spring will route this to /user/{recipientId}/queue/events
+        messagingTemplate.convertAndSendToUser(recipientId.toString(), "/queue/events", event);
         
-        log.debug("Published realtime event {} to user {}", eventType, userId);
+        log.debug("Published realtime event {} to user {}", eventType, recipientId);
     }
 }

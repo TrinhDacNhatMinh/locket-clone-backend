@@ -1,4 +1,4 @@
-package com.minh.locket_clone_backend.notification.service;
+package com.minh.locket_clone_backend.infrastructure.fcm.service;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;

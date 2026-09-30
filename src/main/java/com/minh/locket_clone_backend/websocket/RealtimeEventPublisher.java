@@ -2,6 +2,8 @@ package com.minh.locket_clone_backend.websocket;
 
 import java.util.UUID;
 
+import com.minh.locket_clone_backend.websocket.dto.RealtimeEventType;
+
 public interface RealtimeEventPublisher {
-    void publish(UUID userId, String eventType, Object payload);
+    void publish(UUID recipientId, RealtimeEventType eventType, Object payload);
 }

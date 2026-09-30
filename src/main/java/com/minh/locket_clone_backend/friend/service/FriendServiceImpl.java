@@ -12,14 +12,19 @@ import com.minh.locket_clone_backend.friend.entity.FriendRequestStatus;
 import com.minh.locket_clone_backend.friend.repository.FriendRepository;
 import com.minh.locket_clone_backend.friend.repository.FriendRequestRepository;
 import com.minh.locket_clone_backend.user.dto.PublicProfileResponse;
+import com.minh.locket_clone_backend.user.entity.User;
 import com.minh.locket_clone_backend.user.service.UserService;
+import com.minh.locket_clone_backend.notification.entity.NotificationType;
+import com.minh.locket_clone_backend.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.minh.locket_clone_backend.websocket.dto.RealtimeEventType;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -32,6 +37,7 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendRepository friendRepository;
     private final ObjectProvider<UserService> userServiceProvider;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -73,6 +79,18 @@ public class FriendServiceImpl implements FriendService {
             friendRequestRepository.save(reverseRequest);
             createFriendship(requesterId, addresseeId);
             log.info("Auto-accepted friend request between {} and {}", requesterId, addresseeId);
+
+            User addressee = userServiceProvider.getObject().getUserById(addresseeId);
+            notificationService.notify(
+                    requesterId,
+                    NotificationType.FRIEND_ACCEPTED,
+                    RealtimeEventType.NOTIFICATION,
+                    Map.of(
+                            "actorDisplayName", addressee.getDisplayName(),
+                            "friendId", addresseeId.toString()
+                    ),
+                    null
+            );
         } else {
             // Create new pending request
             FriendRequest newRequest = FriendRequest.builder()
@@ -82,6 +100,18 @@ public class FriendServiceImpl implements FriendService {
                     .build();
             friendRequestRepository.save(newRequest);
             log.info("Friend request sent from {} to {}", requesterId, addresseeId);
+
+            User requester = userServiceProvider.getObject().getUserById(requesterId);
+            notificationService.notify(
+                    addresseeId,
+                    NotificationType.FRIEND_REQUEST,
+                    RealtimeEventType.NOTIFICATION,
+                    Map.of(
+                            "actorDisplayName", requester.getDisplayName(),
+                            "friendId", requesterId.toString()
+                    ),
+                    null
+            );
         }
     }
 
@@ -103,6 +133,18 @@ public class FriendServiceImpl implements FriendService {
             friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
             createFriendship(friendRequest.getRequesterId(), friendRequest.getAddresseeId());
             log.info("Friend request {} accepted by {}", requestId, responderId);
+
+            User responder = userServiceProvider.getObject().getUserById(responderId);
+            notificationService.notify(
+                    friendRequest.getRequesterId(),
+                    NotificationType.FRIEND_ACCEPTED,
+                    RealtimeEventType.NOTIFICATION,
+                    Map.of(
+                            "actorDisplayName", responder.getDisplayName(),
+                            "friendId", responderId.toString()
+                    ),
+                    null
+            );
         } else if (request.action() == FriendRequestAction.REJECT) {
             friendRequest.setStatus(FriendRequestStatus.REJECTED);
             log.info("Friend request {} rejected by {}", requestId, responderId);

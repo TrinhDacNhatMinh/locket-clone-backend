@@ -1,4 +1,4 @@
-package com.minh.locket_clone_backend.config;
+package com.minh.locket_clone_backend.infrastructure.storage.config;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;

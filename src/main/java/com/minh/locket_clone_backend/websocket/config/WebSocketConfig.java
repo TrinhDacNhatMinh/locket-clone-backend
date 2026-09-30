@@ -1,4 +1,4 @@
-package com.minh.locket_clone_backend.config;
+package com.minh.locket_clone_backend.websocket.config;
 
 import com.minh.locket_clone_backend.websocket.security.StompHandshakeInterceptor;
 import lombok.RequiredArgsConstructor;
