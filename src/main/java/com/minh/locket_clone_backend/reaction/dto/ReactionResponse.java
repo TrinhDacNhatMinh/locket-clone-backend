@@ -1,7 +1,6 @@
 package com.minh.locket_clone_backend.reaction.dto;
 
 import com.minh.locket_clone_backend.reaction.entity.Reaction;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.util.UUID;
