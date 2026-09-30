@@ -14,6 +14,7 @@ import com.minh.locket_clone_backend.friend.repository.FriendRequestRepository;
 import com.minh.locket_clone_backend.user.dto.PublicProfileResponse;
 import com.minh.locket_clone_backend.user.entity.User;
 import com.minh.locket_clone_backend.user.service.UserService;
+import com.minh.locket_clone_backend.friend.config.FriendProperties;
 import com.minh.locket_clone_backend.notification.entity.NotificationType;
 import com.minh.locket_clone_backend.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final ObjectProvider<UserService> userServiceProvider;
     private final NotificationService notificationService;
+    private final FriendProperties friendProperties;
 
     @Override
     @Transactional
@@ -58,6 +60,8 @@ public class FriendServiceImpl implements FriendService {
         if (isFriend(requesterId, addresseeId)) {
             throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Already friends");
         }
+
+        validateFriendLimit(requesterId);
 
         if (friendRequestRepository.existsByRequesterIdAndAddresseeIdAndStatus(requesterId, addresseeId, FriendRequestStatus.PENDING)) {
             throw new BusinessException(ErrorCode.FRIEND_REQUEST_ALREADY_EXISTS);
@@ -130,6 +134,8 @@ public class FriendServiceImpl implements FriendService {
         }
 
         if (request.action() == FriendRequestAction.ACCEPT) {
+            validateFriendLimit(friendRequest.getRequesterId(), friendRequest.getAddresseeId());
+
             friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
             createFriendship(friendRequest.getRequesterId(), friendRequest.getAddresseeId());
             log.info("Friend request {} accepted by {}", requestId, responderId);
@@ -233,6 +239,14 @@ public class FriendServiceImpl implements FriendService {
                     .userBId(b)
                     .build();
             friendRepository.save(friend);
+        }
+    }
+
+    private void validateFriendLimit(UUID... userIds) {
+        for (UUID userId : userIds) {
+            if (friendRepository.countByUserId(userId) >= friendProperties.getMaxLimit()) {
+                throw new BusinessException(ErrorCode.FRIEND_LIMIT_EXCEEDED);
+            }
         }
     }
 }

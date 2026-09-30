@@ -14,3 +14,5 @@ app:
     cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
     api-key: ${CLOUDINARY_API_KEY:12345}
     api-secret: ${CLOUDINARY_API_SECRET:abcdef}
+  friend:
+    max-limit: 20

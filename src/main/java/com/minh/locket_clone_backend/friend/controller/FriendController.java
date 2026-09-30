@@ -35,7 +35,8 @@ public class FriendController {
             @ApiResponse(responseCode = "400", description = "Validation error (already friends, existing request)"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "403", description = "Forbidden (User is blocked)"),
-            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "409", description = "Friend limit exceeded")
     })
     @PostMapping("/requests")
     public ResponseEntity<Void> sendFriendRequest(
@@ -50,7 +51,8 @@ public class FriendController {
             @ApiResponse(responseCode = "204", description = "Responded successfully"),
             @ApiResponse(responseCode = "400", description = "Validation error (invalid status or not your request)"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "404", description = "Friend request not found")
+            @ApiResponse(responseCode = "404", description = "Friend request not found"),
+            @ApiResponse(responseCode = "409", description = "Friend limit exceeded")
     })
     @PatchMapping("/requests/{requestId}")
     public ResponseEntity<Void> respondFriendRequest(
