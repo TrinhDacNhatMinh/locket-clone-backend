@@ -39,3 +39,6 @@ build/
 # Ignore sensitive config files
 src/main/resources/application-dev.yaml
 src/main/resources/firebase-service-account.json
+
+# Firebase service account cho Docker production mount
+config/

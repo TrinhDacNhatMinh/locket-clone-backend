@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      POSTGRES_DB: locket_clone_db
+      POSTGRES_USER: locket_clone_user
+      POSTGRES_PASSWORD: locket_clone_pass
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U locket_clone_user -d locket_clone_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: "no"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      # Cloudinary
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+
+      FIREBASE_SERVICE_ACCOUNT_PATH: file:/app/config/firebase-service-account.json
+
+    volumes:
+      - ./config/firebase-service-account.json:/app/config/firebase-service-account.json:ro
+
+volumes:
+  pg_data:
