@@ -12,9 +12,7 @@ import com.minh.locket_clone_backend.notification.entity.NotificationType;
 import com.minh.locket_clone_backend.notification.service.NotificationService;
 import com.minh.locket_clone_backend.user.entity.User;
 import com.minh.locket_clone_backend.user.service.UserService;
-import com.minh.locket_clone_backend.websocket.SessionRegistry;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReactionServiceImpl implements ReactionService {
@@ -34,7 +31,6 @@ public class ReactionServiceImpl implements ReactionService {
     private final PhotoService photoService;
     private final NotificationService notificationService;
     private final UserService userService;
-    private final SessionRegistry sessionRegistry;
 
     @Override
     @Transactional
@@ -42,7 +38,7 @@ public class ReactionServiceImpl implements ReactionService {
         // Check if the user is allowed to view the photo
         Photo photo = photoService.getPhotoIfAllowed(reactorId, photoId);
 
-        // Insert Reaction(seen = false)
+        // Delivery does not mean the owner has viewed the reaction.
         Reaction reaction = Reaction.builder()
                 .photoId(photoId)
                 .userId(reactorId)
@@ -64,39 +60,43 @@ public class ReactionServiceImpl implements ReactionService {
                 ),
                 ReactionResponse.from(savedReaction)
         );
+    }
 
-        // Mark as seen immediately if online
-        if (sessionRegistry.isOnline(photo.getOwnerId())) {
-            savedReaction.setSeen(true);
-            reactionRepository.save(savedReaction);
-            log.info("Reaction sent via WebSocket to online owner {}", photo.getOwnerId());
-        } else {
-            log.info("Owner {} is offline. Reaction marked as unseen.", photo.getOwnerId());
-        }
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReactionResponse> getReactions(UUID ownerId, UUID photoId) {
+        checkPhotoOwner(ownerId, photoId);
+
+        return reactionRepository.findByPhotoIdOrderByCreatedAtDescIdDesc(photoId).stream()
+                .map(ReactionResponse::from)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public List<ReactionResponse> getUnseenReactions(UUID ownerId, UUID photoId) {
-        // 1. Get a photo to verify ownership
-        Photo photo = photoService.getPhotoIfAllowed(ownerId, photoId);
-        if (!photo.getOwnerId().equals(ownerId)) {
-            throw new BusinessException(ErrorCode.PHOTO_NOT_OWNER);
-        }
+        checkPhotoOwner(ownerId, photoId);
 
-        // 2. Fetch unseen reactions
+        // Fetch unseen reactions.
         List<Reaction> unseenReactions = reactionRepository.findByPhotoIdAndSeenFalse(photoId);
 
         if (unseenReactions.isEmpty()) {
             return List.of();
         }
 
-        // 3. Update them to seen=true
+        // Only this explicit view operation marks reactions as seen.
         unseenReactions.forEach(r -> r.setSeen(true));
         reactionRepository.saveAll(unseenReactions);
 
         return unseenReactions.stream()
                 .map(ReactionResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    private void checkPhotoOwner(UUID ownerId, UUID photoId) {
+        Photo photo = photoService.getPhotoIfAllowed(ownerId, photoId);
+        if (!photo.getOwnerId().equals(ownerId)) {
+            throw new BusinessException(ErrorCode.PHOTO_NOT_OWNER);
+        }
     }
 }

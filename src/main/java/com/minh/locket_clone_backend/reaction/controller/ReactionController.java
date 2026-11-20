@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,6 +31,22 @@ import java.util.UUID;
 public class ReactionController {
 
     private final ReactionService reactionService;
+
+    @Operation(summary = "List all reactions", description = "Retrieve all reactions for a photo you own, newest first. Includes seen and unseen reactions without marking them as seen.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved reactions"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Not the owner of the photo or access denied"),
+            @ApiResponse(responseCode = "404", description = "Photo not found")
+    })
+    @GetMapping
+    public ResponseEntity<BaseResponse<List<ReactionResponse>>> getReactions(
+            @PathVariable UUID photoId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        List<ReactionResponse> reactions = reactionService.getReactions(userDetails.userId(), photoId);
+        return ResponseEntity.ok(BaseResponse.success(reactions));
+    }
 
     @Operation(summary = "React to a photo", description = "Add an emoji reaction to a photo you have access to.")
     @ApiResponses(value = {

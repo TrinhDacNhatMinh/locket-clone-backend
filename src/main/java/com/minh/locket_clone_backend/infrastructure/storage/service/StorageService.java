@@ -20,11 +20,21 @@ public interface StorageService {
      *         content-type)
      * @throws com.minh.locket_clone_backend.common.exception.BusinessException
      *         with {@code FILE_TOO_LARGE} if the file exceeds the safety-net
-     *         limit (5MB) — a properly compressed client upload should never
+     *         limit (20 MiB) — a properly compressed client upload should never
      *         hit this; if it does, treat it as a client bug or abuse signal
      * @throws com.minh.locket_clone_backend.common.exception.BusinessException
      *         with {@code STORAGE_UPLOAD_FAILED} if the upload to the storage
      *         provider fails (network, quota, credentials)
      */
     String uploadImage(MultipartFile file);
+
+    /**
+     * Uploads an avatar image (JPEG, PNG or WebP, at most 5 MiB) and returns its
+     * HTTPS URL. Updating the user's profile is a separate operation.
+     *
+     * @throws com.minh.locket_clone_backend.common.exception.BusinessException
+     *         with {@code INVALID_FILE_FORMAT}, {@code FILE_TOO_LARGE} or
+     *         {@code STORAGE_UPLOAD_FAILED} when validation or upload fails
+     */
+    String uploadAvatar(MultipartFile file);
 }

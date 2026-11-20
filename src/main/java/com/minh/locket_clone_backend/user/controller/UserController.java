@@ -2,11 +2,14 @@ package com.minh.locket_clone_backend.user.controller;
 
 import com.minh.locket_clone_backend.auth.security.CustomUserDetails;
 import com.minh.locket_clone_backend.common.response.BaseResponse;
+import com.minh.locket_clone_backend.user.dto.CompleteProfileRequest;
 import com.minh.locket_clone_backend.user.dto.ProfileResponse;
 import com.minh.locket_clone_backend.user.dto.PublicProfileResponse;
 import com.minh.locket_clone_backend.user.dto.UpdateProfileRequest;
 import com.minh.locket_clone_backend.user.dto.UpdateUsernameRequest;
 import com.minh.locket_clone_backend.user.dto.UpdateFcmTokenRequest;
+import com.minh.locket_clone_backend.user.dto.UsernameAvailabilityRequest;
+import com.minh.locket_clone_backend.user.dto.UsernameAvailabilityResponse;
 import com.minh.locket_clone_backend.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import org.springdoc.core.annotations.ParameterObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,6 +46,21 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+
+    @Operation(summary = "Check username availability", description = "Checks without reserving the username. The current user's username is considered available.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Username availability returned"),
+            @ApiResponse(responseCode = "400", description = "Missing or invalid username"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Current user not found")
+    })
+    @GetMapping("/username-availability")
+    public ResponseEntity<BaseResponse<UsernameAvailabilityResponse>> checkUsernameAvailability(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @ParameterObject @Valid @ModelAttribute UsernameAvailabilityRequest request) {
+        UsernameAvailabilityResponse response = userService.checkUsernameAvailability(userDetails.userId(), request.username());
+        return ResponseEntity.ok(BaseResponse.success(response));
+    }
 
     @Operation(summary = "Get current user profile")
     @ApiResponses(value = {
@@ -67,6 +87,21 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequest request) {
         ProfileResponse response = userService.updateProfile(userDetails.userId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(BaseResponse.success(response));
+    }
+
+    @Operation(summary = "Complete profile with display name and username")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Profile completed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid display name or username"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "409", description = "Username is already taken")
+    })
+    @PatchMapping("/me/complete-profile")
+    public ResponseEntity<BaseResponse<ProfileResponse>> completeProfile(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody CompleteProfileRequest request) {
+        ProfileResponse response = userService.completeProfile(userDetails.userId(), request);
+        return ResponseEntity.ok(BaseResponse.success(response));
     }
 
     @Operation(summary = "Complete profile by setting a permanent username")

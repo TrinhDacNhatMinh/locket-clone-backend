@@ -10,5 +10,7 @@ public interface ReactionService {
 
     void react(UUID reactorId, UUID photoId, ReactionRequest request);
 
+    List<ReactionResponse> getReactions(UUID ownerId, UUID photoId);
+
     List<ReactionResponse> getUnseenReactions(UUID ownerId, UUID photoId);
 }

@@ -4,6 +4,7 @@ import com.minh.locket_clone_backend.common.exception.BusinessException;
 import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import com.minh.locket_clone_backend.friend.service.FriendService;
 import com.minh.locket_clone_backend.photo.service.PhotoService;
+import com.minh.locket_clone_backend.user.dto.CompleteProfileRequest;
 import com.minh.locket_clone_backend.user.dto.ProfileResponse;
 import com.minh.locket_clone_backend.user.dto.PublicProfileResponse;
 import com.minh.locket_clone_backend.user.dto.SyncUserRequest;
@@ -12,6 +13,7 @@ import com.minh.locket_clone_backend.user.dto.UpdateFcmTokenRequest;
 import com.minh.locket_clone_backend.user.dto.UpdateProfileRequest;
 import com.minh.locket_clone_backend.user.dto.UpdateUsernameRequest;
 import com.minh.locket_clone_backend.user.dto.UserResponse;
+import com.minh.locket_clone_backend.user.dto.UsernameAvailabilityResponse;
 import com.minh.locket_clone_backend.user.entity.AuthProvider;
 import com.minh.locket_clone_backend.user.entity.Block;
 import com.minh.locket_clone_backend.user.entity.User;
@@ -49,6 +51,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public UsernameAvailabilityResponse checkUsernameAvailability(UUID userId, String username) {
+        User user = getUserById(userId);
+        boolean available = username.equals(user.getUsername()) || !userRepository.existsByUsername(username);
+        return new UsernameAvailabilityResponse(username, available);
+    }
+
+    @Override
     @Transactional
     public ProfileResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         User user = getUserById(userId);
@@ -81,6 +91,22 @@ public class UserServiceImpl implements UserService {
         log.info("Profile updated for user {}", userId);
 
         return ProfileResponse.from(savedUser);
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponse completeProfile(UUID userId, CompleteProfileRequest request) {
+        User user = getUserById(userId);
+
+        if (!request.username().equals(user.getUsername()) && userRepository.existsByUsername(request.username())) {
+            throw new BusinessException(ErrorCode.USERNAME_ALREADY_TAKEN);
+        }
+
+        user.setDisplayName(request.displayName());
+        user.setUsername(request.username());
+        user.setProfileCompleted(true);
+
+        return ProfileResponse.from(userRepository.save(user));
     }
 
     @Override

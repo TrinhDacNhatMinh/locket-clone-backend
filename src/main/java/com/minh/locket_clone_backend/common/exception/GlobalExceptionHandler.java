@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.security.core.AuthenticationException;
 
 import java.util.stream.Collectors;
@@ -48,6 +51,25 @@ public class GlobalExceptionHandler {
         log.warn("Authentication error: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(BaseResponse.error("UNAUTHORIZED", "Full authentication is required to access this resource"));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<BaseResponse<Void>> handleMissingRequestPart(MissingServletRequestPartException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(BaseResponse.error(ErrorCode.VALIDATION_ERROR.name(),
+                        "Required multipart part '" + e.getRequestPartName() + "' is missing"));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<BaseResponse<Void>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(BaseResponse.error(ErrorCode.FILE_TOO_LARGE.name(), "Multipart upload size limit exceeded"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<BaseResponse<Void>> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(BaseResponse.error(ErrorCode.VALIDATION_ERROR.name(), "Unsupported request Content-Type"));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

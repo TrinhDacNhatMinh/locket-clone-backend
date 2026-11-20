@@ -9,6 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface ReactionRepository extends JpaRepository<Reaction, UUID> {
+
+    List<Reaction> findByPhotoIdOrderByCreatedAtDescIdDesc(UUID photoId);
     
     List<Reaction> findByPhotoIdAndSeenFalse(UUID photoId);
 }

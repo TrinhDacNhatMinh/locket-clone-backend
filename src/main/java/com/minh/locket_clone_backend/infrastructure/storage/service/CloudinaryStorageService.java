@@ -7,12 +7,12 @@ import com.minh.locket_clone_backend.common.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 @Service
@@ -20,33 +20,41 @@ import java.util.Set;
 public class CloudinaryStorageService implements StorageService {
 
     private static final long MAX_FILE_SIZE_BYTES = 20L * 1024 * 1024; // 20MB
-
-    private static final Set<String> ALLOWED_MAGIC_BYTES_PREFIXES = Set.of(
-            "FFD8FF",   // JPEG
-            "89504E47", // PNG
-            "52494646"  // WEBP (RIFF container header)
-    );
+    private static final long MAX_AVATAR_SIZE_BYTES = 5L * 1024 * 1024;
 
     private final Cloudinary cloudinary;
 
     @Override
     public String uploadImage(MultipartFile file) {
+        return upload(file, MAX_FILE_SIZE_BYTES, ObjectUtils.asMap("resource_type", "image"));
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        return upload(file, MAX_AVATAR_SIZE_BYTES,
+                ObjectUtils.asMap("resource_type", "image", "folder", "momento/avatars"));
+    }
+
+    private String upload(MultipartFile file, long maxSizeBytes, Map<String, Object> options) {
         validateNotEmpty(file);
-        validateSize(file);
+        validateSize(file, maxSizeBytes);
         validateFormatByMagicBytes(file);
 
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
-                    ObjectUtils.asMap("resource_type", "image")
+                    options
             );
 
             String imageUrl = (String) uploadResult.get("secure_url");
+            if (!StringUtils.hasText(imageUrl) || !imageUrl.startsWith("https://")) {
+                throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED);
+            }
             log.info("Image uploaded to Cloudinary, publicId={}, bytes={}", uploadResult.get("public_id"), file.getSize());
             return imageUrl;
 
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             log.error("Failed to upload image to Cloudinary", e);
             throw new BusinessException(ErrorCode.STORAGE_UPLOAD_FAILED);
         }
@@ -58,29 +66,30 @@ public class CloudinaryStorageService implements StorageService {
         }
     }
 
-    private void validateSize(MultipartFile file) {
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+    private void validateSize(MultipartFile file, long maxSizeBytes) {
+        if (file.getSize() > maxSizeBytes) {
             log.warn("Upload rejected: file size {} bytes exceeds safety-net limit of {} bytes "
                             + "— check client-side compression",
-                    file.getSize(), MAX_FILE_SIZE_BYTES);
-            throw new BusinessException(ErrorCode.FILE_TOO_LARGE);
+                    file.getSize(), maxSizeBytes);
+            throw new BusinessException(ErrorCode.FILE_TOO_LARGE,
+                    "File size exceeds the " + maxSizeBytes / (1024 * 1024) + " MiB limit");
         }
     }
 
     // Validates the file is a genuine image by inspecting its magic bytes
     private void validateFormatByMagicBytes(MultipartFile file) {
-        byte[] header = new byte[4];
+        byte[] header;
         try (InputStream inputStream = file.getInputStream()) {
-            int bytesRead = inputStream.read(header);
-            if (bytesRead < 4) {
-                throw new BusinessException(ErrorCode.INVALID_FILE_FORMAT);
-            }
+            header = inputStream.readNBytes(12);
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.INVALID_FILE_FORMAT);
         }
 
         String hex = bytesToHex(header);
-        boolean valid = ALLOWED_MAGIC_BYTES_PREFIXES.stream().anyMatch(hex::startsWith);
+        boolean valid = hex.startsWith("FFD8FF") // JPEG
+                || hex.startsWith("89504E470D0A1A0A") // PNG
+                || (header.length >= 12 && hex.startsWith("52494646") // RIFF
+                    && hex.substring(16, 24).equals("57454250")); // WEBP
         if (!valid) {
             throw new BusinessException(ErrorCode.INVALID_FILE_FORMAT);
         }

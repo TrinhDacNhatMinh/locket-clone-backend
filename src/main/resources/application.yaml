@@ -1,8 +1,15 @@
 spring:
   application:
     name: locket-clone-backend
+  config:
+    import:
+      - "optional:file:./.env[.properties]"
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
   http:
     converters:
       preferred-json-mapper: jackson2

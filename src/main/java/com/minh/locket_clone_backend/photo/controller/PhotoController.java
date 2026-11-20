@@ -72,6 +72,21 @@ public class PhotoController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
+    @Operation(summary = "Get a photo by ID", description = "Retrieves a photo only when the authenticated user can view it. Soft-deleted photos are not returned.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Photo retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "No access to this photo"),
+            @ApiResponse(responseCode = "404", description = "Photo not found")
+    })
+    @GetMapping("/{photoId}")
+    public ResponseEntity<PhotoResponse> getPhoto(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable UUID photoId
+    ) {
+        return ResponseEntity.ok(PhotoResponse.from(photoService.getPhotoIfAllowed(userDetails.userId(), photoId)));
+    }
+
     @Operation(summary = "Get current user's photos", description = "Retrieves all photos posted by the current user with cursor-based pagination.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Photos retrieved successfully"),

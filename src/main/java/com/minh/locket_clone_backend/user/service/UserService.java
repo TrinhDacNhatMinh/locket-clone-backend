@@ -10,7 +10,11 @@ import java.util.UUID;
 public interface UserService {
     ProfileResponse getProfile(UUID userId);
 
+    UsernameAvailabilityResponse checkUsernameAvailability(UUID userId, String username);
+
     ProfileResponse updateProfile(UUID userId, UpdateProfileRequest request);
+
+    ProfileResponse completeProfile(UUID userId, CompleteProfileRequest request);
 
     ProfileResponse updateUsername(UUID userId, UpdateUsernameRequest request);
 
